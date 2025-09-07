@@ -9,7 +9,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: "1 1 * * 1-5"  # 注意：UTC 时间，每天 01:01 UTC。在美东(UTC-4)是前一天的 21:01
+    - cron: "1 1 * * 1-5"  # 注意：UTC 时间，每天 01:01 UTC。在美东(UTC-4)是前一天的 21:01!
 
 jobs:
   autogreen:
