@@ -4,6 +4,7 @@ permissions:
   contents: write
 
 on:
+  workflow_dispatch:   # 👈 手動觸發
   schedule:
     - cron: "1 1 * * 1-5"  # 每周一到周五 01:01 UTC 触发
 
