@@ -1,37 +1,67 @@
 name: ci
 
-# ✅ 给 GITHUB_TOKEN 明确写权限，否则默认可能是只读
 permissions:
-  contents: write  # ← 必需：允许写入仓库内容（push）
+  contents: write
 
 on:
-  push:
-    branches:
-      - main
   schedule:
-    - cron: "1 1 * * 1-5"  # 注意：UTC 时间，每天 01:01 UTC。在美东(UTC-4)是前一天的 21:01!
+    - cron: "1 1 * * 1-5"  # 每周一到周五 01:01 UTC 触发
 
 jobs:
   autogreen:
     runs-on: ubuntu-latest
     steps:
       - name: Clone repository
-        uses: actions/checkout@v4  # ← 升级到 v4（v3 也可，但 v4 更新更全）
+        uses: actions/checkout@v4
 
-      - name: Auto green
+      - name: Auto commit (3–5 times per week)
         env:
-          # ✅ 使用 x-access-token 形式，最稳妥的官方写法
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          USER_EMAIL: "geo.wang+ac@nyu.edu"  # ← 改成你自己的 noreply 邮箱或公开邮箱
-          USER_NAME: "GeoYWang"  # ← 改成你自己的 GitHub 用户名
+          USER_EMAIL: "geo.wang+ac@nyu.edu"
+          USER_NAME: "GeoYWang"
         run: |
-          git config --local user.email "${USER_EMAIL}"   # ← 改成你自己的
-          git config --local user.name "${USER_NAME}"     # ← 改成你自己的
-
-          # ✅ 用 x-access-token 重新配置 origin（更通用）
+          git config --local user.email "${USER_EMAIL}"
+          git config --local user.name "${USER_NAME}"
           git remote set-url origin https://x-access-token:${TOKEN}@github.com/${REPO}.git
-
           git pull --rebase
-          git commit --allow-empty -m "Initial Commit"  # ← 提交信息可自定义
-          git push
+
+          WEEK_FILE=".week_plan"
+          WEEK_NUM=$(date -u +%V)   # 当前周数 (ISO week number)
+
+          # 如果文件不存在 或者 周数变化 -> 重新设定本周目标
+          if [ ! -f $WEEK_FILE ] || [ "$(cut -d' ' -f1 $WEEK_FILE)" != "$WEEK_NUM" ]; then
+            TARGET=$((3 + RANDOM % 3))   # 随机 3~5
+            echo "$WEEK_NUM 0 $TARGET" > $WEEK_FILE
+            echo "🎲 新的一周 (week $WEEK_NUM)，目标提交 $TARGET 次"
+          fi
+
+          CURRENT=$(cut -d' ' -f2 $WEEK_FILE)
+          TARGET=$(cut -d' ' -f3 $WEEK_FILE)
+
+          if [ "$CURRENT" -ge "$TARGET" ]; then
+            echo "✅ 本周已完成 $CURRENT/$TARGET 次提交，今天休息"
+          else
+            # 剩余天数
+            DAY_OF_WEEK=$(date -u +%u)   # 周几 (1=Mon ... 5=Fri)
+            REMAIN=$((6 - DAY_OF_WEEK))
+            LEFT=$((TARGET - CURRENT))
+
+            # 策略：如果剩余天数 == 剩余提交数 -> 必须提交
+            if [ "$LEFT" -ge "$REMAIN" ]; then
+              DO_COMMIT=1
+            else
+              DO_COMMIT=$((RANDOM % 2))  # 50% 概率
+            fi
+
+            if [ "$DO_COMMIT" -eq 1 ]; then
+              CURRENT=$((CURRENT + 1))
+              echo "$WEEK_NUM $CURRENT $TARGET" > $WEEK_FILE
+              git add $WEEK_FILE
+              git commit -m "Auto commit $(date -u '+%Y-%m-%d %H:%M:%S UTC') [$CURRENT/$TARGET]"
+              git push
+              echo "📌 本周进度 $CURRENT/$TARGET，今天提交成功"
+            else
+              echo "😴 今天跳过 (进度 $CURRENT/$TARGET)"
+            fi
+          fi
