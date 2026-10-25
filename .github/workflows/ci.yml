@@ -19,7 +19,7 @@ jobs:
         env:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          USER_EMAIL: "geo.wang+ac@nyu.edu"
+          USER_EMAIL: "208766262+GeoYWang@users.noreply.github.com"
           USER_NAME: "GeoYWang"
         run: |
           git config --local user.email "${USER_EMAIL}"
