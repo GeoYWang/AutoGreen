@@ -63,7 +63,6 @@
 - seed note 64
 - seed note 65
 - seed note 66
-- seed note 67
 - seed note 68
 - seed note 69
 - seed note 70
