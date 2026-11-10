@@ -77,7 +77,6 @@
 - seed note 80
 - seed note 81
 - seed note 82
-- seed note 83
 - seed note 84
 - seed note 85
 - seed note 86
